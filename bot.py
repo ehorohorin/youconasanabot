@@ -9,7 +9,7 @@ from telegram.bot import Bot
 
 def format_slack(s):
         txt_result = s
- 
+
         m = re.search(r'\<@([a-zA-Z0-9]*?)\>', s)
         if m:
                 UID=m.groups()[0]
@@ -26,8 +26,8 @@ def format_slack(s):
 	# link to project/sub-task format
         txt_result = re.sub(r'\<(https.*?)\|(.*?)\>', r'\2', txt_result)
 	# Removing bold formatting
-        txt_result = re.sub(r'\*(.*?)\*', r'\1', txt_result)		
-		
+        txt_result = re.sub(r'\*(.*?)\*', r'\1', txt_result)
+
         return txt_result
 
 
@@ -38,7 +38,7 @@ TELEGRAM_TOKEN = os.environ['TELEGRAM_TOKEN']
 TELEGRAM_TARGET = os.environ['TELEGRAM_TARGET']
 telegram_bot = Bot(TELEGRAM_TOKEN)
 
-VERBOSE_MODE = os.environ['VERBOSE']
+VERBOSE_MODE = os.environ.get('VERBOSE', '0')
 
 if VERBOSE_MODE=='1':
     print("Verbose mode is enabled")
