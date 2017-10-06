@@ -1,4 +1,7 @@
 # slack-to-telegram-bot
+Small hack for integration Asana.com and Telegram.me using slack service as a transport service. Based on https://github.com/trestoa/slack-to-telegram-bot repo.
+!! Be aware of hard-coded filter of Slack BOT ID, remove it or replace with a proper one before using it on your slack channel !!
+
 Bot for forwarding slack messages to telegram.
 
 ## Usage
