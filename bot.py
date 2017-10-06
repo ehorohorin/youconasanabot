@@ -19,8 +19,10 @@ def format_slack(s):
 
                 txt_result = re.sub(r'\<@(.*?)\>', user_name, txt_result)
 
+        # ID: field removal
+        txt_result = re.sub(r'(\*ID\:\*\s[0-9]*\n)', '', txt_result)
 	# Due date format
-        txt_result = re.sub(r'\<(https.*?)\|(.*?)\>', r'\2', txt_result)
+        txt_result = re.sub(r'\<\!(date\^.*?\})\|(.*?)\>', r'\2', txt_result)
 	# link to project/sub-task format
         txt_result = re.sub(r'\<(https.*?)\|(.*?)\>', r'\2', txt_result)
 	# Removing bold formatting
@@ -36,13 +38,19 @@ TELEGRAM_TOKEN = os.environ['TELEGRAM_TOKEN']
 TELEGRAM_TARGET = os.environ['TELEGRAM_TARGET']
 telegram_bot = Bot(TELEGRAM_TOKEN)
 
+VERBOSE_MODE = os.environ['VERBOSE']
+
+if VERBOSE_MODE=='1':
+    print("Verbose mode is enabled")
+
 if sc.rtm_connect():
     while True:
         messages = sc.rtm_read()
         for message in messages:
             try:
                 if message['type'] == 'message':
-                    #print(message)
+                    if VERBOSE_MODE=='1':
+                        print(message)
                     if (message['subtype'] == 'bot_message') and (message['bot_id'] == 'B7AMC8MPE'):
                         msg_string = ""
                         for attachement in message['attachments']:
