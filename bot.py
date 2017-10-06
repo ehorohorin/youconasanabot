@@ -1,9 +1,29 @@
 import os
 import sys
 import time
+import re
 
 from slackclient import SlackClient
 from telegram.bot import Bot
+
+
+def format_slack(s):
+        txt_result = s
+ 
+        m = re.search(r'\<@([a-zA-Z0-9]*?)\>', s)
+        if m:
+                UID=m.groups()[0]
+
+                user = sc.api_call("users.info",user=UID)['user']
+                user_name=user['real_name']
+
+                txt_result = re.sub(r'\<@(.*?)\>', user_name, txt_result)
+
+        txt_result = re.sub(r'\<(https.*?)\|(.*?)\>', r'\2', txt_result)
+        txt_result = re.sub(r'\*(.*?)\*', r'\1', txt_result)		
+		
+        return txt_result
+
 
 SLACK_TOKEN = os.environ['SLACK_TOKEN']
 sc = SlackClient(SLACK_TOKEN)
@@ -18,22 +38,13 @@ if sc.rtm_connect():
         for message in messages:
             try:
                 if message['type'] == 'message':
-                    if message['channel'][0] == 'G':
-                        channel = sc.api_call(
-                            "groups.info",
-                            channel=message['channel'])['group']
-                    elif message['channel'][0] == 'C':
-                        channel = sc.api_call(
-                            "channels.info",
-                            channel=message['channel'])['channel']
-                    else:
-                        channel = {'name': 'bot'}
+                    #print(message)
+                    if (message['subtype'] == 'bot_message') and (message['bot_id'] == 'B7AMC8MPE'):
+                        msg_string = ""
+                        for attachement in message['attachments']:
+                                text = format_slack(attachement['text'])
+                                msg_string += "%s: %s (%s)" % (attachement['fallback'],text,attachement['title_link'])
 
-                    user = sc.api_call(
-                        "users.info",
-                        user=message['user'])['user']
-
-                    msg_string = '@{} posted to #{}: {}'.format(user['name'], channel['name'], message['text'])
                     telegram_bot.sendMessage(TELEGRAM_TARGET, msg_string)
             except:
                 print('Could not send message.')
