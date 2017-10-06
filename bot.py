@@ -19,7 +19,11 @@ def format_slack(s):
 
                 txt_result = re.sub(r'\<@(.*?)\>', user_name, txt_result)
 
+	# Due date format
         txt_result = re.sub(r'\<(https.*?)\|(.*?)\>', r'\2', txt_result)
+	# link to project/sub-task format
+        txt_result = re.sub(r'\<(https.*?)\|(.*?)\>', r'\2', txt_result)
+	# Removing bold formatting
         txt_result = re.sub(r'\*(.*?)\*', r'\1', txt_result)		
 		
         return txt_result
