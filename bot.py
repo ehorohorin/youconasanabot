@@ -11,6 +11,7 @@ from telegram.bot import Bot
 class AsanaProjects:
 	"""Class for projects/sync tokens sync"""
 	sync_tokens = {}
+	last_used_token = 0
 	head = {}
 
 	def getRequest(self, URL):
@@ -18,16 +19,28 @@ class AsanaProjects:
 		response = requests.get(URL, headers=head)
 		return response
 
-	def getProjects(self):
+	def updateProjectList(self):
 		myUrl = 'https://app.asana.com/api/1.0/projects/'
 		response = self.getRequest(myUrl)
-		return response
+		
+		for project in response.json()['data']:
+			myUrl = 'https://app.asana.com/api/1.0/projects/{}'.format(project['id'])
+			project_response = self.getRequest(myUrl)
+			if project_response.json()['data']['archived'] == False:
+				self.getUpdatesOnProject(project['id'])
+			else:
+				print('{} is archived'.format(project['id']))
+
 
 		
 	def getSyncToken(self, projectId):
-		sync_token = self.sync_tokens.get(projectId, 0)
-		print("Project {}, sync_token {}".format(projectId, sync_token))
-		return sync_token
+		self.last_used_token = self.sync_tokens.get(projectId, self.last_used_token)
+		print("Project {}, sync_token {}".format(projectId, self.last_used_token))
+		return self.last_used_token
+
+	def updateSyncToken(self, projectId, token):
+		self.last_used_token=token
+		self.sync_tokens[projectId]=self.last_used_token
 
 	def getEvents(self, projectId):
 		sync_token=self.getSyncToken(projectId)
@@ -38,11 +51,12 @@ class AsanaProjects:
 
 		if response.status_code == 412:
 			print("Status code: 412 (Token is expired)")	
-			self.sync_tokens[projectId]=response.json()['sync']
+			self.updateSyncToken(projectId,response.json()['sync'])
 			myUrl = 'https://app.asana.com/api/1.0/projects/{}/events?sync={}'.format(projectId,self.sync_tokens[projectId])
 			response = self.getRequest(myUrl)
+			print('new token is: {}'.format(response.json()['sync']))
 		
-		self.sync_tokens[projectId]=response.json()['sync']
+		self.updateSyncToken(projectId,response.json()['sync'])
 		return response
 
 	def getUpdatesOnProject(self, projectId):
@@ -51,6 +65,7 @@ class AsanaProjects:
 
 
 	def getUpdates(self):
+		print(self.sync_tokens)
 		value = {}
 		
 		for p in self.sync_tokens.keys():
@@ -67,11 +82,8 @@ class AsanaProjects:
 	def __init__(self, TOKEN):
 		self.head = {'Authorization': '{}'.format(TOKEN)}
 
-		projects = self.getProjects()
-		print(projects)
+		self.updateProjectList()
 
-		for project in projects.json()['data']:
-			self.getUpdatesOnProject(project['id'])
 
 TELEGRAM_TOKEN = os.environ['TELEGRAM_TOKEN']
 TELEGRAM_TARGET = os.environ['TELEGRAM_TARGET']
@@ -79,9 +91,6 @@ ASANA_TOKEN = os.environ['ASANA_TOKEN']
 
 
 def main():
-	telegram_bot = Bot(TELEGRAM_TOKEN)
-	ap = AsanaProjects(ASANA_TOKEN)
-
 	VERBOSE_MODE = os.environ.get('VERBOSE', '0')
 
 	if VERBOSE_MODE=='1':
@@ -91,6 +100,10 @@ def main():
 		print('TELEGRAM_TARGET: {}'.format(TELEGRAM_TARGET))
 		print('ASANA_TOKEN: {}'.format(ASANA_TOKEN))
 
+	telegram_bot = Bot(TELEGRAM_TOKEN)
+	ap = AsanaProjects(ASANA_TOKEN)
+
+	print('Go wild!')
 	while True:
 		print(ap.getUpdates())
 		time.sleep(60)
